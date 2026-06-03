@@ -11,6 +11,25 @@ export default function ResultPanel({ title, data, premium, embedded }) {
           <h3 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-terminal-muted">
             {title || 'Result'}
           </h3>
+          {/* Boolean summary: show simulated/live and any important boolean flags */}
+          {(() => {
+            const boolEntries = Object.entries(data).filter(([, v]) => typeof v === 'boolean');
+            if (boolEntries.length === 0) return null;
+            return (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {boolEntries.map(([k, v]) => (
+                  <span
+                    key={k}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-mono font-semibold ${
+                      v ? 'bg-emerald-600/30 text-emerald-300' : 'bg-rose-600/20 text-rose-300'
+                    }`}
+                  >
+                    {k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}: {v ? 'Yes' : 'No'}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
           <pre className={preClass}>{JSON.stringify(data, null, 2)}</pre>
         </div>
       )}
