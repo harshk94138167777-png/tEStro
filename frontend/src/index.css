@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  min-width: 0;
+}
+
+body {
+  @apply antialiased bg-terminal-bg font-mono text-slate-200;
+}
+
+/* SecOps matrix-style backdrop */
+.suite-backdrop {
+  background-color: #000000;
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px),
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(0, 255, 65, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(20, 60, 30, 0.35), transparent);
+  background-size:
+    40px 40px,
+    40px 40px,
+    100% 100%,
+    100% 100%;
+  background-attachment: fixed;
+}
+
+.suite-scanlines,
+.scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 255, 65, 0.035),
+    rgba(0, 255, 65, 0.035) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+@layer components {
+  .suite-panel {
+    @apply rounded-lg border border-terminal-border bg-terminal-panel/95 shadow-suite;
+  }
+
+  .suite-input {
+    @apply max-w-full min-w-0 rounded-lg border border-terminal-border/80 bg-terminal-input-bg px-3 py-2.5 font-mono text-sm text-terminal-accent outline-none transition-colors;
+    @apply placeholder:text-terminal-accent-muted/70 focus:border-terminal-accent focus:shadow-[0_0_22px_rgba(0,255,65,0.22)] focus:ring-1 focus:ring-terminal-accent/45;
+  }
+
+  .suite-btn-primary {
+    @apply rounded-lg bg-terminal-accent px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-black shadow-glow sm:px-4 sm:text-sm;
+    @apply transition hover:bg-terminal-accent-bright disabled:opacity-50;
+  }
+
+  .suite-page-title {
+    @apply font-display text-xl font-bold tracking-tight text-terminal-accent sm:text-2xl md:text-3xl;
+  }
+}
