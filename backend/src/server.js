@@ -23,9 +23,16 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
+// Configure CORS origin strictly from FRONTEND_URL in production. In development
+// fall back to localhost for convenience.
+const frontendOrigin = (process.env.FRONTEND_URL || '').trim();
+if (process.env.NODE_ENV === 'production' && !frontendOrigin) {
+  console.error('Missing required environment variable: FRONTEND_URL (set to your frontend URL)');
+  process.exit(1);
+}
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: frontendOrigin || 'http://localhost:5173',
     credentials: true,
   })
 );

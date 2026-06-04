@@ -103,6 +103,21 @@ Open `http://localhost:5173`. Vite proxies `/api` to the backend.
 
 ---
 
+## Deploying to Vercel (frontend)
+
+- Create a new project in Vercel and connect this repository (frontend folder).
+- In the Vercel project **Environment Variables** set:
+	- `VITE_API_URL` = `https://your-backend-url` (include scheme, e.g. `https://api.example.com`)
+	- (Optional) `NODE_ENV=production`
+- Build Command: `npm run build`
+- Output Directory: `dist`
+
+Notes:
+- Ensure your backend allows requests from your Vercel domain: set `FRONTEND_URL` on the backend host to your Vercel URL (for example `https://your-site.vercel.app`).
+- Keep secrets out of the repo: set `MONGODB_URL`, `JWT_SECRET`, and any API keys as environment variables on the host (Render, Heroku, etc.).
+- After deployment, verify the frontend loads and that API calls succeed (check `GET /api/health`).
+
+
 ## Security & misuse prevention
 
 - **Live HTTP** (traffic, API probe, rate-test batch, header check): localhost-only by default. Set `ALLOW_LIVE_TESTING=true` in `backend/.env` to allow authorized real API links.  
