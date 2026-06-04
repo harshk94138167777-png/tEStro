@@ -1,1 +1,3 @@
-18
+git add backend/package.json .nvmrc backend/.nvmrc render.yaml
+git commit -m "Pin Node to 18.x; add .nvmrc and render.yaml"
+git push origin main
