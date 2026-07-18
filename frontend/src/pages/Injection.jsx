@@ -25,6 +25,7 @@ export default function Injection() {
   const [cmdPayload, setCmdPayload] = useState(`; id
 | whoami
 & cat /etc/passwd`);
+  const [liveMode, setLiveMode] = useState(false);
   const [sqlRes, setSqlRes] = useState(null);
   const [cmdRes, setCmdRes] = useState(null);
   const [premiumSql, setPremiumSql] = useState(null);
@@ -40,6 +41,8 @@ export default function Injection() {
         method,
         targetParam,
         payload: sqlPayload,
+        live: liveMode,
+        mode: liveMode ? 'live' : 'simulate',
       });
       setSqlRes(data.result);
       setPremiumSql(data.premiumInsights);
@@ -57,6 +60,8 @@ export default function Injection() {
         method: cmdMethod,
         targetParam: cmdParam,
         payload: cmdPayload,
+        live: liveMode,
+        mode: liveMode ? 'live' : 'simulate',
       });
       setCmdRes(data.result);
       setPremiumCmd(data.premiumInsights);
@@ -127,6 +132,18 @@ export default function Injection() {
             onChange={(e) => setSqlPayload(e.target.value)}
           />
         </div>
+        <label className="mt-3 flex items-center gap-2 font-mono text-sm text-terminal-accent">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-terminal-border text-terminal-accent"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          Run localhost-only live probe (explicit opt-in)
+        </label>
+        <p className="mt-1 font-mono text-[11px] text-terminal-muted">
+          Only use this for localhost or 127.0.0.1 targets you control. The backend still rejects non-local targets.
+        </p>
       </ModuleWorkbench>
       )}
 
@@ -181,6 +198,18 @@ export default function Injection() {
             onChange={(e) => setCmdPayload(e.target.value)}
           />
         </div>
+        <label className="mt-3 flex items-center gap-2 font-mono text-sm text-terminal-accent">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-terminal-border text-terminal-accent"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          Run localhost-only live probe (explicit opt-in)
+        </label>
+        <p className="mt-1 font-mono text-[11px] text-terminal-muted">
+          Only use this for localhost or 127.0.0.1 targets you control. The backend still rejects non-local targets.
+        </p>
       </ModuleWorkbench>
       )}
     </div>

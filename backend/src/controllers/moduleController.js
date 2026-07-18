@@ -34,6 +34,31 @@ function isHttpUrl(url) {
   });
 }
 
+export function shouldUseLiveInjectionMode(body = {}) {
+  const mode = String(body?.mode || body?.testMode || '').trim().toLowerCase();
+  const liveFlag = body?.live === true || body?.live === 'true' || body?.live === 1;
+  return mode === 'live' || liveFlag;
+}
+
+export function shouldUseLiveProbeMode(body = {}) {
+  const mode = String(body?.mode || body?.probeMode || body?.testMode || '').trim().toLowerCase();
+  const liveFlag = body?.live === true || body?.live === 'true' || body?.live === 1;
+  return mode === 'live' || liveFlag;
+}
+
+function parsePositiveInt(value, fallback) {
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function resolveUserLimit(role, requestedValue, baseLimit) {
+  if (role === 'premium' || role === 'admin') {
+    const parsed = parsePositiveInt(requestedValue, baseLimit);
+    return parsed > 0 ? parsed : baseLimit;
+  }
+  return baseLimit;
+}
+
 async function persist(req, module, testType, inputSummary, result, premiumInsights) {
   await saveTest(req.userId, module, testType, inputSummary, result, result.riskLevel, premiumInsights);
   await logAction(req.userId, 'test_run', { module, testType }, req.ip);
@@ -42,17 +67,18 @@ async function persist(req, module, testType, inputSummary, result, premiumInsig
 export async function sqlInjection(req, res, next) {
   try {
     const { payload, url } = req.body || {};
-    
+    const useLive = shouldUseLiveInjectionMode(req.body || {});
+
     let result;
-    if (url) {
-      // Live testing mode
-      assertLocalTarget(url);
+    if (useLive && url) {
+      // Live testing mode (explicitly requested)
+      assertLocalTarget(url, req.user?.role);
       result = await testSqlInjectionLive(url, payload || '');
     } else {
-      // Pattern analysis mode
+      // Pattern analysis mode (safe default)
       result = analyzeSqlInjection(payload);
     }
-    
+
     let premium = null;
     if (isPremiumOrAdmin(req.user.role)) {
       premium = premiumRuleInsights(result, 'injection');
@@ -67,14 +93,15 @@ export async function sqlInjection(req, res, next) {
 export async function commandInjection(req, res, next) {
   try {
     const { payload, url } = req.body || {};
-    
+    const useLive = shouldUseLiveInjectionMode(req.body || {});
+
     let result;
-    if (url) {
-      // Live testing mode
-      assertLocalTarget(url);
+    if (useLive && url) {
+      // Live testing mode (explicitly requested)
+      assertLocalTarget(url, req.user?.role);
       result = await testCommandInjectionLive(url, payload || '');
     } else {
-      // Pattern analysis mode
+      // Pattern analysis mode (safe default)
       result = analyzeCommandInjection(payload);
     }
     
@@ -96,7 +123,7 @@ export async function xss(req, res, next) {
     let result;
     if (url) {
       // Live testing mode
-      assertLocalTarget(url);
+      assertLocalTarget(url, req.user?.role);
       result = await testXssLive(url, payload || '');
     } else {
       // Pattern analysis mode
@@ -121,7 +148,7 @@ export async function csrf(req, res, next) {
     let result;
     if (url) {
       // Live testing mode
-      assertLocalTarget(url);
+      assertLocalTarget(url, req.user?.role);
       result = await testCsrfOnLiveTarget(url);
     } else {
       // Education mode
@@ -137,15 +164,14 @@ export async function csrf(req, res, next) {
 
 export async function bruteForce(req, res, next) {
   try {
-    const { attempts, url, username, passwords } = req.body || {};
+    const { attempts, url, username, passwords, mode, live } = req.body || {};
+    const useLive = shouldUseLiveProbeMode(req.body || {});
     
     let result;
-    if (url && username) {
-      // Live testing mode
-      assertLocalTarget(url);
+    if (useLive && url && username) {
+      assertLocalTarget(url, req.user?.role);
       result = await testBruteForceOnLiveTarget(url, username, passwords || []);
     } else {
-      // Simulation mode
       result = simulateBruteForce({ attempts });
     }
     
@@ -163,14 +189,13 @@ export async function bruteForce(req, res, next) {
 export async function credentialStuffing(req, res, next) {
   try {
     const { password, url, username } = req.body || {};
+    const useLive = shouldUseLiveProbeMode(req.body || {});
     
     let result;
-    if (url && username && password) {
-      // Live testing mode
-      assertLocalTarget(url);
+    if (useLive && url && username && password) {
+      assertLocalTarget(url, req.user?.role);
       result = await testBruteForceOnLiveTarget(url, username, [password]);
     } else {
-      // Simulation mode
       result = simulateCredentialStuffing(password);
     }
     
@@ -191,21 +216,25 @@ export async function credentialStuffing(req, res, next) {
  */
 export async function trafficSim(req, res, next) {
   try {
-    const { url, concurrency = 2, totalRequests = 10 } = req.body || {};
+    const { url, concurrency = 2, totalRequests = 10, limit, mode, live } = req.body || {};
+    const useLive = shouldUseLiveProbeMode(req.body || {});
     if (!url || !isHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http(s) URL is required, for example http://localhost:5000/api/health' });
     }
-    assertLocalTarget(url);
+    assertLocalTarget(url, req.user?.role);
 
     const role = req.user.role;
     const maxConc = role === 'free' ? 2 : role === 'premium' ? 8 : 10;
     const maxTotal = getLoadSimMaxTotal(role);
 
-    const conc = Math.min(Math.max(1, parseInt(concurrency, 10) || 1), maxConc);
-    const total = Math.min(Math.max(1, parseInt(totalRequests, 10) || 1), maxTotal);
+    const requestedConcurrency = concurrency ?? limit ?? 2;
+    const requestedTotal = totalRequests ?? limit ?? 10;
+    const conc = resolveUserLimit(role, requestedConcurrency, maxConc);
+    const total = resolveUserLimit(role, requestedTotal, maxTotal);
 
     const latencies = [];
     const errors = [];
+    const attempts = [];
 
     for (let offset = 0; offset < total; offset += conc) {
       const batch = Math.min(conc, total - offset);
@@ -215,10 +244,18 @@ export async function trafficSim(req, res, next) {
           (async () => {
             const start = Date.now();
             try {
-              await axios.get(url, { timeout: 5000, validateStatus: () => true });
-              latencies.push(Date.now() - start);
+              const response = await axios.get(url, { timeout: 5000, validateStatus: () => true });
+              const elapsed = Date.now() - start;
+              latencies.push(elapsed);
+              attempts.push({
+                statusCode: response.status,
+                elapsedMs: elapsed,
+                ok: response.status < 500,
+              });
             } catch (e) {
-              errors.push({ message: e.message });
+              const elapsed = Date.now() - start;
+              errors.push({ message: e.message, elapsedMs: elapsed });
+              attempts.push({ statusCode: null, elapsedMs: elapsed, ok: false, error: e.message });
             }
           })()
         );
@@ -235,12 +272,15 @@ export async function trafficSim(req, res, next) {
       concurrency: conc,
       totalRequests: total,
       completed: latencies.length,
+      failed: errors.length,
+      attempts,
       errors,
       avgLatencyMs:
         latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
-      riskLevel: 'info',
-      message:
-        'Bounded requests to your local target only. Do not use against systems you do not own or lack written authorization to test.',
+      riskLevel: errors.length > 0 ? 'medium' : 'info',
+      message: useLive
+        ? 'Bounded probes completed against the local target and captured the actual HTTP responses.'
+        : 'Bounded requests to your local target only. Do not use against systems you do not own or lack written authorization to test.',
     };
 
     let premium = null;
@@ -395,7 +435,7 @@ export async function fileValidate(req, res, next) {
  */
 export async function rateLimitBatch(req, res, next) {
   try {
-    const { url, count = 10 } = req.body || {};
+    const { url, count = 10, limit } = req.body || {};
     if (!url || !isHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http(s) URL is required, for example http://localhost:5000/api/health' });
     }
@@ -403,7 +443,8 @@ export async function rateLimitBatch(req, res, next) {
 
     const role = req.user.role;
     const maxN = getRateBatchMax(role);
-    const n = Math.min(Math.max(1, parseInt(count, 10) || 10), maxN);
+    const requestedCount = count ?? limit ?? 10;
+    const n = resolveUserLimit(role, requestedCount, maxN);
 
     const statusHistogram = {};
     const latencies = [];

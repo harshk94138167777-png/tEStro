@@ -19,6 +19,7 @@ export default function AuthTesting() {
   const [password, setPassword] = useState('password');
   const [iterations, setIterations] = useState(5);
   const [attempts, setAttempts] = useState('wrong1\nwrong2\nwrong3\nwrong4\nwrong5');
+  const [liveMode, setLiveMode] = useState(false);
 
   const [credUrl, setCredUrl] = useState('');
   const [credPairs, setCredPairs] = useState('admin:password123\nuser:letmein\ntest:test123');
@@ -45,6 +46,8 @@ export default function AuthTesting() {
         url,
         username,
         passwords: list,
+        live: liveMode,
+        mode: liveMode ? 'live' : 'simulate',
       });
       setBf(data.result);
       setPrem(data.premiumInsights);
@@ -62,6 +65,8 @@ export default function AuthTesting() {
         username: credPairs.split(/\r?\n/).find(Boolean)?.split(':')[0] || 'admin',
         password: passwordSingle,
         credentialContext: credPairs,
+        live: liveMode,
+        mode: liveMode ? 'live' : 'simulate',
       });
       setCs(data.result);
     } catch (e) {
@@ -132,6 +137,18 @@ export default function AuthTesting() {
             />
           </div>
         </div>
+        <label className="mt-3 flex items-center gap-2 font-mono text-sm text-terminal-accent">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-terminal-border text-terminal-accent"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          Run localhost-only live probe (explicit opt-in)
+        </label>
+        <p className="mt-1 font-mono text-[11px] text-terminal-muted">
+          Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.
+        </p>
         <div>
           <div className="flex items-center justify-between gap-2">
             <ModuleFieldLabel>Iterations (attempt lines)</ModuleFieldLabel>

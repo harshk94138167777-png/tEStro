@@ -14,6 +14,7 @@ export default function Traffic() {
   const [rps, setRps] = useState(10);
   const [concurrency, setConcurrency] = useState(2);
   const [totalRequests, setTotalRequests] = useState(10);
+  const [liveMode, setLiveMode] = useState(false);
   const [res, setRes] = useState(null);
   const [prem, setPrem] = useState(null);
   const [err, setErr] = useState('');
@@ -34,22 +35,26 @@ export default function Traffic() {
     };
   }, []);
 
+  const isPrivileged = user?.role === 'premium' || user?.role === 'admin';
   const maxPerRun =
     user?.role === 'free'
       ? limits?.loadSimMaxTotal?.free ?? 50
       : limits?.loadSimMaxTotal?.premium ?? 1000;
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const estimatedTotal = clamp(Math.round((Number(durationSec) || 1) * (Number(rps) || 1)), 1, maxPerRun);
+  const maxAllowed = isPrivileged ? Number.MAX_SAFE_INTEGER : maxPerRun;
 
   const run = async () => {
     setErr('');
     try {
       saveUrl(url);
-      const effectiveTotal = clamp(Number(totalRequests) || estimatedTotal, 1, maxPerRun);
+      const effectiveTotal = clamp(Number(totalRequests) || estimatedTotal, 1, maxAllowed);
       const { data } = await api.post('/api/modules/traffic/simulate', {
         url,
         concurrency: clamp(Number(concurrency) || 1, 1, 50),
         totalRequests: effectiveTotal,
+        live: liveMode,
+        mode: liveMode ? 'live' : 'simulate',
       });
       setRes(data.result);
       setPrem(data.premiumInsights);
@@ -105,6 +110,18 @@ export default function Traffic() {
             ))}
           </datalist>
         </div>
+        <label className="mt-3 flex items-center gap-2 font-mono text-sm text-terminal-accent">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-terminal-border text-terminal-accent"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          Run localhost-only live probe (explicit opt-in)
+        </label>
+        <p className="mt-1 font-mono text-[11px] text-terminal-muted">
+          Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <div className="flex items-center justify-between">
@@ -149,18 +166,20 @@ export default function Traffic() {
           <div>
             <div className="flex items-center justify-between">
               <ModuleFieldLabel>Total requests</ModuleFieldLabel>
-              <span className="font-mono text-[10px] text-terminal-muted">Auto {estimatedTotal} / Max {maxPerRun}</span>
+              <span className="font-mono text-[10px] text-terminal-muted">Auto {estimatedTotal} / Max {isPrivileged ? 'manual' : maxPerRun}</span>
             </div>
             <input
               type="number"
               min={1}
-              max={maxPerRun}
+              max={isPrivileged ? undefined : maxPerRun}
               className="suite-input mt-2 w-full"
               value={totalRequests}
               onChange={(e) => setTotalRequests(Number(e.target.value))}
             />
             <p className="mt-2 font-mono text-[10px] text-terminal-muted">
-              Estimated from duration x rps: {estimatedTotal} requests (capped by plan limit).
+              {isPrivileged
+                ? 'Premium/admin can enter a larger cap manually; the server will honor the value you submit.'
+                : `Estimated from duration x rps: ${estimatedTotal} requests (capped by plan limit).`}
             </p>
           </div>
         </div>

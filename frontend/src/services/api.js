@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const TOKEN_KEY = 'testro_token';
 
-const resolvedBase = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.origin}/api` : '');
+const resolvedBase = import.meta.env.VITE_API_URL || '';
 const api = axios.create({
   baseURL: resolvedBase,
   headers: { 'Content-Type': 'application/json' },

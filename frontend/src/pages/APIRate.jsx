@@ -50,12 +50,14 @@ export default function APIRate() {
     };
   }, []);
 
+  const isPrivileged = user?.role === 'premium' || user?.role === 'admin';
   const maxBatch =
     user?.role === 'free'
       ? limits?.rateBatchMax?.free ?? 40
       : user?.role === 'premium' || user?.role === 'admin'
         ? limits?.rateBatchMax?.premium ?? 600
         : 40;
+  const batchInputMax = isPrivileged ? undefined : maxBatch;
 
   const runProbe = async () => {
     setErr('');
@@ -172,7 +174,9 @@ export default function APIRate() {
         banners={[
           {
             variant: 'teal',
-            text: `Plan ceiling: up to ${maxBatch} requests per batch for your current role.`,
+            text: isPrivileged
+              ? 'Premium/admin can raise the batch size manually from the input below.'
+              : `Plan ceiling: up to ${maxBatch} requests per batch for your current role.`,
           },
         ]}
         configTitle="Target config"
@@ -203,11 +207,11 @@ export default function APIRate() {
             </select>
           </div>
           <div>
-            <ModuleFieldLabel>Total requests (1–{maxBatch})</ModuleFieldLabel>
+            <ModuleFieldLabel>{isPrivileged ? 'Total requests' : `Total requests (1–${maxBatch})`}</ModuleFieldLabel>
             <input
               type="number"
               min={1}
-              max={maxBatch}
+              max={batchInputMax}
               className="suite-input mt-2 w-full"
               value={batchCount}
               onChange={(e) => setBatchCount(Number(e.target.value))}
