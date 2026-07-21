@@ -210,6 +210,17 @@ export function premiumRuleInsights(baseResult, moduleKey) {
 
 import axios from 'axios';
 
+function getResponseText(data) {
+  if (typeof data === 'string') return data;
+  if (Buffer.isBuffer(data)) return data.toString('utf8');
+  if (data == null) return '';
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return String(data);
+  }
+}
+
 export async function testSqlInjectionLive(url, payload) {
   const payloads = [
     `${payload}' OR '1'='1`,
@@ -249,9 +260,8 @@ export async function testSqlInjectionLive(url, payload) {
           'unexpected',
         ];
         
-        const hasSqlError = sqlErrors.some((err) =>
-          response.data?.toString().toLowerCase().includes(err)
-        );
+        const responseText = getResponseText(response.data).toLowerCase();
+        const hasSqlError = sqlErrors.some((err) => responseText.includes(err));
         
         if (hasSqlError) {
           vulnerabilityFound = true;
@@ -341,7 +351,7 @@ export async function testCommandInjectionLive(url, payload) {
           validateStatus: () => true,
         });
         
-        const responseText = response.data?.toString() || '';
+        const responseText = getResponseText(response.data).toLowerCase();
         
         // Signs of command execution
         const cmdSignatures = [
@@ -435,10 +445,10 @@ export async function testXssLive(url, payload) {
           validateStatus: () => true,
         });
         
-        const responseText = response.data?.toString() || '';
+        const responseText = getResponseText(response.data).toLowerCase();
         
         // Check if payload is reflected in response
-        if (responseText.includes(testPayload) || responseText.includes(payload)) {
+        if (responseText.includes(testPayload.toLowerCase()) || responseText.includes(payload.toLowerCase())) {
           xssReflected = true;
           results.push({
             payload: testPayload,
@@ -640,7 +650,7 @@ export async function testPathTraversalOnLiveTarget(url, payload) {
           validateStatus: () => true,
         });
         
-        const responseText = response.data?.toString() || '';
+        const responseText = getResponseText(response.data).toLowerCase();
         
         // Signs of file access
         const sensitiveFileIndicators = [
