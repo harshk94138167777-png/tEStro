@@ -45,7 +45,7 @@ export function analyzeSqlInjection(input) {
   return {
     module: 'injection',
     type: 'sql_pattern_detection',
-    simulated: true,
+    simulated: findings.length > 0,
     findings,
     score,
     riskLevel: risk,
@@ -68,7 +68,7 @@ export function analyzeCommandInjection(input) {
   return {
     module: 'injection',
     type: 'command_injection_simulation',
-    simulated: true,
+    simulated: findings.length > 0,
     findings,
     score,
     riskLevel: risk,
@@ -90,7 +90,7 @@ export function analyzeXss(input) {
   return {
     module: 'cross_site',
     type: 'xss_detection',
-    simulated: true,
+    simulated: findings.length > 0,
     findings,
     score,
     riskLevel: risk,
@@ -301,7 +301,7 @@ export async function testSqlInjectionLive(url, payload) {
   return {
     module: 'injection',
     type: 'sql_injection_live',
-    simulated: false,
+    simulated: vulnerabilityFound || timeBasedResponse,
     url,
     payloadsTested: payloads.length,
     results,
@@ -397,7 +397,7 @@ export async function testCommandInjectionLive(url, payload) {
   return {
     module: 'injection',
     type: 'command_injection_live',
-    simulated: false,
+    simulated: commandExecDetected,
     url,
     payloadsTested: payloads.length,
     results,
@@ -476,7 +476,7 @@ export async function testXssLive(url, payload) {
   return {
     module: 'cross_site',
     type: 'xss_injection_live',
-    simulated: false,
+    simulated: xssReflected,
     url,
     payloadsTested: payloads.length,
     results,
@@ -550,7 +550,7 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
   return {
     module: 'authentication',
     type: 'brute_force_live',
-    simulated: false,
+    simulated: successfulLogin,
     url,
     username,
     attemptsMade: attempts.length,
@@ -599,7 +599,7 @@ export async function testCsrfOnLiveTarget(url) {
     return {
       module: 'cross_site',
       type: 'csrf_live_test',
-      simulated: false,
+      simulated: !csrfProtected,
       url,
       csrfTokenFound: csrfTokenPresent,
       csrfProtected,
@@ -695,7 +695,7 @@ export async function testPathTraversalOnLiveTarget(url, payload) {
   return {
     module: 'file_path',
     type: 'path_traversal_live',
-    simulated: false,
+    simulated: fileAccessDetected,
     url,
     payloadsTested: payloads.length,
     results,
@@ -750,7 +750,7 @@ export async function testFileUploadOnLiveTarget(url, filename) {
     return {
       module: 'file_path',
       type: 'file_upload_live',
-      simulated: false,
+      simulated: executedUploads > 0,
       url,
       testFilenamesTried: testFilenames.length,
       results,
