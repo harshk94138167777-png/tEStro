@@ -598,7 +598,7 @@ export async function testCsrfOnLiveTarget(url) {
     let postWithoutToken = null;
     try {
       postWithoutToken = await axios.post(
-        `${url}/submit`,
+        url,
         { data: 'test' },
         {
           timeout: 5000,
@@ -610,18 +610,25 @@ export async function testCsrfOnLiveTarget(url) {
     }
     
     const csrfTokenPresent = !!tokenMatch || hasTokenField;
-    const csrfProtected = postWithoutToken?.status === 403 || postWithoutToken?.status === 401;
+    const postStatus = postWithoutToken?.status;
+    const endpointResponded = Number.isInteger(postStatus) && postStatus !== 404;
+    const csrfProtected = postStatus === 403 || postStatus === 401;
+    const inconclusive = !endpointResponded;
     
     return {
       module: 'cross_site',
       type: 'csrf_live_test',
-      simulated: !csrfProtected,
+      live: true,
+      browserExecutionPerformed: false,
       url,
       csrfTokenFound: csrfTokenPresent,
       csrfProtected,
-      postResponse: postWithoutToken?.status,
-      riskLevel: csrfProtected ? 'info' : 'high',
-      message: csrfProtected
+      postResponse: postStatus,
+      inconclusive,
+      riskLevel: csrfProtected || inconclusive ? 'info' : 'high',
+      message: inconclusive
+        ? 'CSRF check inconclusive — the state-changing endpoint did not respond. Verify the URL and route.'
+        : csrfProtected
         ? 'CSRF protection detected — server enforces token validation.'
         : 'No CSRF protection detected — vulnerable to cross-site form submission attacks.',
     };
