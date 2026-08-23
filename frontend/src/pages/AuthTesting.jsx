@@ -187,7 +187,12 @@ export default function AuthTesting() {
         title="Credential stuffing simulator"
         subtitle="Run controlled credential checks against authorized endpoints or offline demo scoring when URL is omitted."
         banners={[
-          { variant: 'passive', text: 'PASSIVE CHECK — No credentials are posted to the URLs shown; analysis uses demo data server-side.' },
+          {
+            variant: liveMode ? 'teal' : 'passive',
+            text: liveMode
+              ? 'LIVE CHECK — Only use a login endpoint and test account you own or are authorized to assess.'
+              : 'PASSIVE CHECK — No credentials are posted; analysis uses the demo weak-password list server-side.',
+          },
           { variant: 'auth', text: 'AUTHORIZED SYSTEMS ONLY — Never test live accounts without permission.' },
         ]}
         configTitle="Target config"
@@ -210,6 +215,20 @@ export default function AuthTesting() {
             placeholder="https://api.example.com/login"
           />
         </div>
+        <label className="mt-3 flex items-center gap-2 font-mono text-sm text-terminal-accent">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded border-terminal-border text-terminal-accent"
+            checked={liveMode}
+            onChange={(e) => setLiveMode(e.target.checked)}
+          />
+          {canProbeExternal ? 'Run authorized live probe (explicit opt-in)' : 'Run localhost-only live probe (explicit opt-in)'}
+        </label>
+        <p className="mt-1 font-mono text-[11px] text-terminal-muted">
+          {canProbeExternal
+            ? 'Admin/premium live probes may use approved targets configured by the backend.'
+            : 'Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.'}
+        </p>
         <div>
           <ModuleFieldLabel>Credentials (user:pass)</ModuleFieldLabel>
           <textarea
