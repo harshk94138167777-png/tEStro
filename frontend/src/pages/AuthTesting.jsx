@@ -36,9 +36,10 @@ export default function AuthTesting() {
   const [err, setErr] = useState('');
 
   useEffect(() => {
+    if (attempts !== 'wrong1\nwrong2\nwrong3\nwrong4\nwrong5') return;
     const n = Math.min(5, Math.max(1, iterations));
     setAttempts(Array.from({ length: n }, (_, i) => `wrong${i + 1}`).join('\n'));
-  }, [iterations]);
+  }, [iterations, attempts]);
 
   const runBf = async () => {
     setErr('');
@@ -186,7 +187,11 @@ export default function AuthTesting() {
         </div>
         <div>
           <ModuleFieldLabel>Attempt strings (synced)</ModuleFieldLabel>
-          <textarea className="suite-input mt-2 min-h-[120px] w-full resize-y" value={attempts} readOnly />
+          <textarea
+            className="suite-input mt-2 min-h-[120px] w-full resize-y"
+            value={attempts}
+            onChange={(e) => setAttempts(e.target.value)}
+          />
         </div>
       </ModuleWorkbench>
       )}
