@@ -225,7 +225,7 @@ export async function testSqlInjectionLive(url, payload) {
   const payloads = [
     `${payload}' OR '1'='1`,
     `${payload}' UNION SELECT NULL--`,
-    `${payload}'; DROP TABLE users--`,
+    `${payload}' AND '1'='2`,
   ];
   
   const results = [];
@@ -263,28 +263,26 @@ export async function testSqlInjectionLive(url, payload) {
         const responseText = getResponseText(response.data).toLowerCase();
         const hasSqlError = sqlErrors.some((err) => responseText.includes(err));
         
+        const result = {
+          payload: testPayload,
+          statusCode: response.status,
+          responseTime,
+          foundError: hasSqlError,
+          timeBased: responseTime > 5000,
+        };
+
         if (hasSqlError) {
           vulnerabilityFound = true;
-          results.push({
-            payload: testPayload,
-            statusCode: response.status,
-            responseTime,
-            foundError: true,
-            errorType: 'SQL Error in Response',
-          });
+          result.errorType = 'SQL Error in Response';
         }
         
         // Time-based detection
         if (responseTime > 5000) {
           timeBasedResponse = true;
-          results.push({
-            payload: testPayload,
-            statusCode: response.status,
-            responseTime,
-            foundError: false,
-            detection: 'Time-based SQL injection suspected',
-          });
+          result.detection = 'Time-based SQL injection suspected';
         }
+
+        results.push(result);
       } catch (e) {
         results.push({
           payload: testPayload,
@@ -311,7 +309,8 @@ export async function testSqlInjectionLive(url, payload) {
   return {
     module: 'injection',
     type: 'sql_injection_live',
-    simulated: vulnerabilityFound || timeBasedResponse,
+    live: true,
+    simulated: false,
     url,
     payloadsTested: payloads.length,
     results,
@@ -321,7 +320,7 @@ export async function testSqlInjectionLive(url, payload) {
     riskLevel: risk,
     message: vulnerabilityFound
       ? 'SQL vulnerability detected — use parameterized queries and input validation.'
-      : 'No SQL vulnerability detected in live testing.',
+      : 'Live SQL response checks completed. No SQL error or time-based signal was detected.',
   };
 }
 
