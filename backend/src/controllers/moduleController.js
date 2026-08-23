@@ -235,6 +235,8 @@ export async function trafficSim(req, res, next) {
     const latencies = [];
     const errors = [];
     const attempts = [];
+    const targetHost = new URL(url).hostname.toLowerCase();
+    const localhostOnly = ['localhost', '127.0.0.1', '::1'].includes(targetHost);
 
     for (let offset = 0; offset < total; offset += conc) {
       const batch = Math.min(conc, total - offset);
@@ -250,7 +252,7 @@ export async function trafficSim(req, res, next) {
               attempts.push({
                 statusCode: response.status,
                 elapsedMs: elapsed,
-                ok: response.status < 500,
+                ok: response.status >= 200 && response.status < 400,
               });
             } catch (e) {
               const elapsed = Date.now() - start;
@@ -266,8 +268,9 @@ export async function trafficSim(req, res, next) {
     const result = {
       module: 'traffic',
       type: 'safe_load_simulation',
+      live: true,
       simulated: false,
-      localhostOnly: true,
+      localhostOnly,
       url,
       concurrency: conc,
       totalRequests: total,
@@ -278,9 +281,7 @@ export async function trafficSim(req, res, next) {
       avgLatencyMs:
         latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : null,
       riskLevel: errors.length > 0 ? 'medium' : 'info',
-      message: useLive
-        ? 'Bounded probes completed against the local target and captured the actual HTTP responses.'
-        : 'Bounded requests to your local target only. Do not use against systems you do not own or lack written authorization to test.',
+      message: 'Bounded live HTTP probes completed against an authorized target. Review status codes and latency; this is not a denial-of-service test.',
     };
 
     let premium = null;

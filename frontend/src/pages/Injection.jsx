@@ -85,7 +85,12 @@ export default function Injection() {
         title="SQLi vulnerability scanner"
         subtitle="Assess SQL injection risk using offline payload analysis or controlled live checks against authorized targets."
         banners={[
-          { variant: 'passive', text: 'PASSIVE CHECK — No payloads are executed against live systems. Educational simulation only.' },
+          {
+            variant: liveMode ? 'teal' : 'passive',
+            text: liveMode
+              ? 'AUTHORIZED LIVE CHECK — Requests use the target URL and are limited to approved systems.'
+              : 'PASSIVE CHECK — No payloads are sent to live systems. Educational pattern analysis only.',
+          },
           { variant: 'auth', text: 'AUTHORIZED SYSTEMS ONLY — Use only on targets you own or have written permission to test.' },
         ]}
         configTitle="Target config"
@@ -159,7 +164,12 @@ export default function Injection() {
         title="Command execution simulator"
         subtitle="Classify command injection patterns with offline analysis or controlled live checks against authorized targets."
         banners={[
-          { variant: 'passive', text: 'PASSIVE CHECK — Syntax analysis only; no commands are executed.' },
+          {
+            variant: liveMode ? 'teal' : 'passive',
+            text: liveMode
+              ? 'AUTHORIZED LIVE CHECK — Requests use the target URL; no operating-system commands are executed by tEStro.'
+              : 'PASSIVE CHECK — Syntax analysis only; no requests or operating-system commands are executed.',
+          },
           { variant: 'auth', text: 'AUTHORIZED SYSTEMS ONLY — Educational use on permitted systems only.' },
         ]}
         configTitle="Target config"
