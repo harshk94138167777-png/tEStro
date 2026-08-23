@@ -19,6 +19,7 @@ export default function AuthTesting() {
   const [baseUrl, setBaseUrl] = useState('');
   const [loginPath, setLoginPath] = useState('/auth/login');
   const [username, setUsername] = useState('admin');
+  const [identifierField, setIdentifierField] = useState('email');
   const [password, setPassword] = useState('password');
   const [iterations, setIterations] = useState(5);
   const [attempts, setAttempts] = useState('wrong1\nwrong2\nwrong3\nwrong4\nwrong5');
@@ -27,6 +28,7 @@ export default function AuthTesting() {
   const [credUrl, setCredUrl] = useState('');
   const [credPairs, setCredPairs] = useState('admin:password123\nuser:letmein\ntest:test123');
   const [passwordSingle, setPasswordSingle] = useState('password');
+  const [credentialIdentifierField, setCredentialIdentifierField] = useState('email');
 
   const [bf, setBf] = useState(null);
   const [cs, setCs] = useState(null);
@@ -47,7 +49,8 @@ export default function AuthTesting() {
       const { data } = await api.post('/api/modules/auth/brute-force', {
         attempts: list,
         url,
-        username,
+        identifierField,
+        [identifierField]: username,
         passwords: list,
         live: liveMode,
         mode: liveMode ? 'live' : 'simulate',
@@ -63,9 +66,11 @@ export default function AuthTesting() {
     setErr('');
     try {
       saveUrl(credUrl);
+      const credentialIdentifier = credPairs.split(/\r?\n/).find(Boolean)?.split(':')[0] || '';
       const { data } = await api.post('/api/modules/auth/credential-stuffing', {
         url: credUrl,
-        username: credPairs.split(/\r?\n/).find(Boolean)?.split(':')[0] || 'admin',
+        identifierField: credentialIdentifierField,
+        [credentialIdentifierField]: credentialIdentifier,
         password: passwordSingle,
         credentialContext: credPairs,
         live: liveMode,
@@ -127,8 +132,14 @@ export default function AuthTesting() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <ModuleFieldLabel>Username (context)</ModuleFieldLabel>
-            <input className="suite-input mt-2 w-full" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <ModuleFieldLabel>Login identifier</ModuleFieldLabel>
+            <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem]">
+              <input className="suite-input w-full" value={username} onChange={(e) => setUsername(e.target.value)} />
+              <select className="suite-input w-full" value={identifierField} onChange={(e) => setIdentifierField(e.target.value)}>
+                <option value="email">Email</option>
+                <option value="username">Username</option>
+              </select>
+            </div>
           </div>
           <div>
             <ModuleFieldLabel>Password (context)</ModuleFieldLabel>
@@ -236,6 +247,17 @@ export default function AuthTesting() {
             value={credPairs}
             onChange={(e) => setCredPairs(e.target.value)}
           />
+        </div>
+        <div>
+          <ModuleFieldLabel>Login identifier type</ModuleFieldLabel>
+          <select
+            className="suite-input mt-2 w-full"
+            value={credentialIdentifierField}
+            onChange={(e) => setCredentialIdentifierField(e.target.value)}
+          >
+            <option value="email">Email</option>
+            <option value="username">Username</option>
+          </select>
         </div>
         <div>
           <ModuleFieldLabel>Password to evaluate (API field)</ModuleFieldLabel>

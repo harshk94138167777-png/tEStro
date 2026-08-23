@@ -498,7 +498,7 @@ export async function testXssLive(url, payload) {
   };
 }
 
-export async function testBruteForceOnLiveTarget(url, username, passwordList = []) {
+export async function testBruteForceOnLiveTarget(url, identifier, passwordList = [], identifierField = 'username') {
   const defaultPasswords = ['password', '123456', 'admin', 'letmein', 'welcome'];
   const passwords = passwordList.length > 0 ? passwordList : defaultPasswords;
   
@@ -512,7 +512,7 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
         const response = await axios.post(
           url,
           {
-            username,
+            [identifierField]: identifier,
             password: pwd,
           },
           {
@@ -564,7 +564,7 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
     type: 'brute_force_live',
     simulated: successfulLogin,
     url,
-    username,
+    [identifierField]: identifier,
     attemptsMade: attempts.length,
     results: attempts,
     successfulLogin,

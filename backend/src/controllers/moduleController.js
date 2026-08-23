@@ -164,13 +164,15 @@ export async function csrf(req, res, next) {
 
 export async function bruteForce(req, res, next) {
   try {
-    const { attempts, url, username, passwords, mode, live } = req.body || {};
+    const { attempts, url, username, email, identifierField = 'username', passwords, mode, live } = req.body || {};
     const useLive = shouldUseLiveProbeMode(req.body || {});
     
     let result;
-    if (useLive && url && username) {
+    const field = identifierField === 'email' ? 'email' : 'username';
+    const loginIdentifier = field === 'email' ? email : username;
+    if (useLive && url && loginIdentifier) {
       assertLocalTarget(url, req.user?.role);
-      result = await testBruteForceOnLiveTarget(url, username, passwords || []);
+      result = await testBruteForceOnLiveTarget(url, loginIdentifier, passwords || [], field);
     } else {
       result = simulateBruteForce({ attempts });
     }
@@ -188,13 +190,15 @@ export async function bruteForce(req, res, next) {
 
 export async function credentialStuffing(req, res, next) {
   try {
-    const { password, url, username } = req.body || {};
+    const { password, url, username, email, identifierField = 'username' } = req.body || {};
     const useLive = shouldUseLiveProbeMode(req.body || {});
     
     let result;
-    if (useLive && url && username && password) {
+    const field = identifierField === 'email' ? 'email' : 'username';
+    const loginIdentifier = field === 'email' ? email : username;
+    if (useLive && url && loginIdentifier && password) {
       assertLocalTarget(url, req.user?.role);
-      result = await testBruteForceOnLiveTarget(url, username, [password]);
+      result = await testBruteForceOnLiveTarget(url, loginIdentifier, [password], field);
     } else {
       result = simulateCredentialStuffing(password);
     }
