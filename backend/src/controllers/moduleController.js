@@ -322,6 +322,8 @@ export async function apiProbe(req, res, next) {
     const result = {
       module: 'api_rate',
       type: 'endpoint_probe',
+      live: true,
+      target: url,
       status: response.status,
       responseTimeMs: ms,
       headersSample: {
@@ -329,7 +331,7 @@ export async function apiProbe(req, res, next) {
         'x-ratelimit-limit': response.headers['x-ratelimit-limit'],
       },
       riskLevel: response.status >= 500 ? 'medium' : 'info',
-      message: 'Probe completed against localhost only.',
+      message: 'Live GET/HEAD probe completed against an authorized target.',
     };
     let premium = null;
     if (isPremiumOrAdmin(req.user.role)) {
