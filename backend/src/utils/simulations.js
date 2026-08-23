@@ -481,12 +481,13 @@ export async function testXssLive(url, payload) {
     };
   }
   
-  const risk = xssReflected ? 'high' : results.length > 0 ? 'medium' : 'low';
+  const risk = xssReflected ? 'high' : results.length > 0 ? 'info' : 'low';
   
   return {
     module: 'cross_site',
     type: 'xss_injection_live',
-    simulated: xssReflected,
+    live: true,
+    browserExecutionPerformed: false,
     url,
     payloadsTested: payloads.length,
     results,
@@ -494,7 +495,7 @@ export async function testXssLive(url, payload) {
     riskLevel: risk,
     message: xssReflected
       ? 'Reflected XSS vulnerability detected — implement output encoding and CSP.'
-      : 'No XSS vulnerability detected.',
+      : 'Live reflection check completed. No XSS payload was reflected; browser execution was not performed.',
   };
 }
 
