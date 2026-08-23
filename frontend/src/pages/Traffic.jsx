@@ -117,10 +117,12 @@ export default function Traffic() {
             checked={liveMode}
             onChange={(e) => setLiveMode(e.target.checked)}
           />
-          Run localhost-only live probe (explicit opt-in)
+          {isPrivileged ? 'Run authorized live probe (explicit opt-in)' : 'Run localhost-only live probe (explicit opt-in)'}
         </label>
         <p className="mt-1 font-mono text-[11px] text-terminal-muted">
-          Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.
+          {isPrivileged
+            ? 'Admin/premium live probes may use approved targets configured by the backend.'
+            : 'Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.'}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

@@ -5,12 +5,15 @@ import ModuleWorkbench, { ModuleFieldLabel } from '../components/ModuleWorkbench
 import { useHashScroll } from '../hooks/useHashScroll.js';
 import { useModuleSection } from '../hooks/useModuleSection.js';
 import { useUrlHistory } from '../hooks/useUrlHistory.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { IconCodeBrackets, IconTerminalPrompt } from '../components/NavIcons.jsx';
 
 const SECTION_IDS = ['sql', 'cmd'];
 
 export default function Injection() {
   const active = useModuleSection('sql', SECTION_IDS);
+  const { user } = useAuth();
+  const canProbeExternal = user?.role === 'admin' || user?.role === 'premium';
   useHashScroll();
   const { urls: urlHistory, saveUrl } = useUrlHistory();
   const [targetUrl, setTargetUrl] = useState('');
@@ -139,10 +142,12 @@ export default function Injection() {
             checked={liveMode}
             onChange={(e) => setLiveMode(e.target.checked)}
           />
-          Run localhost-only live probe (explicit opt-in)
+          {canProbeExternal ? 'Run authorized live probe (explicit opt-in)' : 'Run localhost-only live probe (explicit opt-in)'}
         </label>
         <p className="mt-1 font-mono text-[11px] text-terminal-muted">
-          Only use this for localhost or 127.0.0.1 targets you control. The backend still rejects non-local targets.
+          {canProbeExternal
+            ? 'Admin/premium live probes may use approved targets configured by the backend.'
+            : 'Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.'}
         </p>
       </ModuleWorkbench>
       )}
@@ -205,10 +210,12 @@ export default function Injection() {
             checked={liveMode}
             onChange={(e) => setLiveMode(e.target.checked)}
           />
-          Run localhost-only live probe (explicit opt-in)
+          {canProbeExternal ? 'Run authorized live probe (explicit opt-in)' : 'Run localhost-only live probe (explicit opt-in)'}
         </label>
         <p className="mt-1 font-mono text-[11px] text-terminal-muted">
-          Only use this for localhost or 127.0.0.1 targets you control. The backend still rejects non-local targets.
+          {canProbeExternal
+            ? 'Admin/premium live probes may use approved targets configured by the backend.'
+            : 'Only use this for localhost or 127.0.0.1 targets you control. The backend rejects non-local targets.'}
         </p>
       </ModuleWorkbench>
       )}
