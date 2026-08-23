@@ -305,7 +305,7 @@ export async function apiProbe(req, res, next) {
     if (!url || !isHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http(s) URL is required, for example http://localhost:5000/api/health' });
     }
-    assertLocalTarget(url);
+    assertLocalTarget(url, req.user?.role);
     const m = String(method).toUpperCase();
     if (!['GET', 'HEAD'].includes(m)) {
       return res.status(400).json({ error: 'Only GET and HEAD are allowed for safety' });
@@ -348,7 +348,7 @@ export async function securityHeaders(req, res, next) {
     if (!url || !isHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http(s) URL is required, for example http://localhost:5000/api/health' });
     }
-    assertLocalTarget(url);
+    assertLocalTarget(url, req.user?.role);
     const response = await axios.get(url, { timeout: 8000, validateStatus: () => true, maxRedirects: 3 });
     const h = response.headers;
     const expected = [
@@ -391,7 +391,7 @@ export async function pathTraversal(req, res, next) {
     let result;
     if (url) {
       // Live testing mode
-      assertLocalTarget(url);
+      assertLocalTarget(url, req.user?.role);
       result = await testPathTraversalOnLiveTarget(url, payload || '');
     } else {
       // Pattern analysis mode
@@ -416,7 +416,7 @@ export async function fileValidate(req, res, next) {
     let result;
     if (url) {
       // Live testing mode
-      assertLocalTarget(url);
+      assertLocalTarget(url, req.user?.role);
       result = await testFileUploadOnLiveTarget(url, filename || 'test');
     } else {
       // Pattern analysis mode
@@ -439,7 +439,7 @@ export async function rateLimitBatch(req, res, next) {
     if (!url || !isHttpUrl(url)) {
       return res.status(400).json({ error: 'Valid http(s) URL is required, for example http://localhost:5000/api/health' });
     }
-    assertLocalTarget(url);
+    assertLocalTarget(url, req.user?.role);
 
     const role = req.user.role;
     const maxN = getRateBatchMax(role);

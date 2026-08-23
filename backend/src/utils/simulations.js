@@ -510,7 +510,7 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
       // Limit to 10 attempts
       try {
         const response = await axios.post(
-          `${url}/login`,
+          url,
           {
             username,
             password: pwd,
@@ -521,11 +521,11 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
           }
         );
         
+        const message = typeof response.data?.message === 'string' ? response.data.message : '';
         const isSuccess =
-          response.status === 200 ||
-          response.data?.token ||
+          Boolean(response.data?.token) ||
           response.data?.success === true ||
-          (response.data?.message && response.data.message.toLowerCase().includes('success'));
+          /\bsuccess(?:ful)?\b/i.test(message);
         
         attempts.push({
           password: pwd,
@@ -555,7 +555,9 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
     };
   }
   
-  const risk = successfulLogin ? 'critical' : attempts.length >= 5 ? 'high' : 'medium';
+  const responseStatuses = attempts.map((attempt) => attempt.statusCode).filter(Number.isInteger);
+  const hasUsableResponse = responseStatuses.some((status) => status > 0 && status !== 404);
+  const risk = successfulLogin ? 'critical' : hasUsableResponse && attempts.length >= 5 ? 'high' : hasUsableResponse ? 'medium' : 'info';
   
   return {
     module: 'authentication',
@@ -567,9 +569,12 @@ export async function testBruteForceOnLiveTarget(url, username, passwordList = [
     results: attempts,
     successfulLogin,
     riskLevel: risk,
+    inconclusive: !hasUsableResponse && !successfulLogin,
     message: successfulLogin
       ? `Login successful with password: ${attempts.find((a) => a.success).password}`
-      : `Tested ${attempts.length} password(s) — none successful.`,
+      : hasUsableResponse
+        ? `Tested ${attempts.length} password(s) — none successful.`
+        : 'No usable login response was received; verify the endpoint before interpreting this result.',
   };
 }
 
